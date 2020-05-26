@@ -7,12 +7,21 @@
 ```bash
 export PASSWORD=mysecretpassword
 
-# generate keys
+# (1) generate keys
 docker-compose run generate_validator_keys
 
-# run beacon chain and validator
+# (2) run beacon chain and validator
 docker-compose up validator
+
+# (3) view public key
+docker-compose run view_public_key
 ```
+
+1. Generate keypair and copy the deposit data. Visit [https://prylabs.net/participate](https://prylabs.net/participate) to acquire 32 ETH and submit the raw transaction deposit data.
+
+2. Run the the beacon chain node, validator, and [eth2stats](https://github.com/Alethio/eth2stats-client) client. Wait for chain to sync and for deposit inclusion which could take 3-7hrs.
+
+3. Retrieve your public key and visit [https://beacon.etherscan.io](https://beacon.etherscan.io) to view the progress.
 
 ## License
 
