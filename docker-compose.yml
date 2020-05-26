@@ -1,0 +1,39 @@
+version: '3.7'
+
+services:
+  beacon:
+    image: gcr.io/prysmaticlabs/prysm/beacon-chain:latest
+    restart: always
+    ports:
+      - "4000:4000"
+      - "13000:13000"
+      - "12000:12000/udp"
+    volumes:
+      - $HOME/.eth2/beaconchaindata:/data
+    command: --datadir=/data
+
+  validator:
+    image: gcr.io/prysmaticlabs/prysm/validator:latest
+    restart: always
+    container_name: validator
+    depends_on:
+      - beacon
+    links:
+      - beacon
+    environment:
+      - PASSWORD=${PASSWORD}
+    volumes:
+      - $HOME/.eth2validators:/data
+    command: --datadir=/data --keystore-path=/data --beacon-rpc-provider=beacon:4000 --password=$PASSWORD
+
+  eth2stats:
+    image: alethio/eth2stats-client:latest
+    restart: always
+    container_name: eth2stats
+    depends_on:
+      - validator
+    links:
+      - beacon
+    volumes:
+      - $HOME/.eth2stats/data:/data
+    command: run --eth2stats.node-name="my node" --data.folder="/data" --eth2stats.addr="grpc.topaz.eth2stats.io:443" --eth2stats.tls=true --beacon.type="prysm" --beacon.addr="beacon:4000" --beacon.metrics-addr="http://beacon:8080/metrics"
