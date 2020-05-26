@@ -8,10 +8,10 @@
 export PASSWORD=mysecretpassword
 
 # generate keys
-docker-compose run validator accounts create --keystore-path=/data --password=$PASSWORD
+docker-compose run generate_validator_keys
 
-# run validator
-docker-compose up
+# run beacon chain and validator
+docker-compose up validator
 ```
 
 ## License

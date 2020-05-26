@@ -1,7 +1,7 @@
 version: '3.7'
 
 services:
-  beacon:
+  beacon_node:
     image: gcr.io/prysmaticlabs/prysm/beacon-chain:latest
     restart: always
     ports:
@@ -12,28 +12,46 @@ services:
       - $HOME/.eth2/beaconchaindata:/data
     command: --datadir=/data
 
-  validator:
+  generate_validator_keys:
     image: gcr.io/prysmaticlabs/prysm/validator:latest
-    restart: always
-    container_name: validator
-    depends_on:
-      - beacon
-    links:
-      - beacon
+    container_name: validator_keys
     environment:
       - PASSWORD=${PASSWORD}
     volumes:
       - $HOME/.eth2validators:/data
-    command: --datadir=/data --keystore-path=/data --beacon-rpc-provider=beacon:4000 --password=$PASSWORD
+    command: accounts create --keystore-path=/data --password=$PASSWORD
+
+  validator_node:
+    image: gcr.io/prysmaticlabs/prysm/validator:latest
+    restart: always
+    container_name: validator
+    depends_on:
+      - beacon_node
+    links:
+      - beacon_node
+    environment:
+      - PASSWORD=${PASSWORD}
+    volumes:
+      - $HOME/.eth2validators:/data
+    command: --datadir=/data --keystore-path=/data --beacon-rpc-provider=beacon_node:4000 --password=$PASSWORD
 
   eth2stats:
     image: alethio/eth2stats-client:latest
     restart: always
     container_name: eth2stats
     depends_on:
-      - validator
+      - beacon_node
+      - validator_node
     links:
-      - beacon
+      - beacon_node
     volumes:
       - $HOME/.eth2stats/data:/data
-    command: run --eth2stats.node-name="my node" --data.folder="/data" --eth2stats.addr="grpc.topaz.eth2stats.io:443" --eth2stats.tls=true --beacon.type="prysm" --beacon.addr="beacon:4000" --beacon.metrics-addr="http://beacon:8080/metrics"
+    command: run --eth2stats.node-name="my node" --data.folder="/data" --eth2stats.addr="grpc.topaz.eth2stats.io:443" --eth2stats.tls=true --beacon.type="prysm" --beacon.addr="beacon_node:4000" --beacon.metrics-addr="http://beacon_node:8080/metrics"
+
+  validator:
+    image: gcr.io/prysmaticlabs/prysm/beacon-chain:latest
+    command: sh -c 'echo start'
+    depends_on:
+      - beacon_node
+      - validator_node
+      - eth2stats
